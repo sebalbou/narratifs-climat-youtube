@@ -70,10 +70,16 @@ export interface AudienceEvolutionRow {
   analyzed_views: number;
   hostile_views: number;
   hostile_pct: number;
+  // Part venant des chaînes institutionnelles (pour le filtre global).
+  analyzed_videos_inst?: number;
+  analyzed_views_inst?: number;
+  hostile_views_inst?: number;
 }
 
 export type CommentClimate =
   | "adhesion_science"
+  | "critique_methode"
+  | "colere_inaction"
   | "scepticisme_deni"
   | "hostilite_ecologie"
   | "complotisme"

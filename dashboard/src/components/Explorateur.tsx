@@ -14,9 +14,11 @@ type SortKey = "view_count" | "published_at" | "confiance";
 export default function Explorateur({
   videos,
   comments = {},
+  excludeInst = false,
 }: {
   videos: VideoRow[];
   comments?: CommentsMap;
+  excludeInst?: boolean;
 }) {
   const [filter, setFilter] = useState<NarrativeKey | "all">("all");
   const [search, setSearch] = useState("");
@@ -25,6 +27,7 @@ export default function Explorateur({
 
   const rows = useMemo(() => {
     let r = videos;
+    if (excludeInst) r = r.filter((v) => !v.is_institutional);
     if (filter !== "all") r = r.filter((v) => v.narratif_principal === filter);
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -45,7 +48,7 @@ export default function Explorateur({
       return sortDesc ? (bv as number) - (av as number) : (av as number) - (bv as number);
     });
     return sorted;
-  }, [videos, filter, search, sortKey, sortDesc]);
+  }, [videos, filter, search, sortKey, sortDesc, excludeInst]);
 
   function toggleSort(key: SortKey) {
     if (sortKey === key) setSortDesc((d) => !d);
@@ -139,6 +142,14 @@ export default function Explorateur({
                   </a>
                   <div className="text-xs text-stone-500 mt-0.5 flex items-center gap-1.5 flex-wrap">
                     <span>{v.channel_title}</span>
+                    {v.is_institutional && (
+                      <span
+                        className="px-1 rounded bg-stone-200 text-stone-500 text-[10px] uppercase tracking-wide"
+                        title="Chaîne institutionnelle / annonceur — visibilité largement issue de campagnes publicitaires"
+                      >
+                        pub
+                      </span>
+                    )}
                     <ClimateChip info={comments[v.video_id]} />
                   </div>
                   {/* Narratif visible sur mobile (colonne dédiée masquée) */}

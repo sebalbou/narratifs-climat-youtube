@@ -159,14 +159,18 @@ def main():
         }
 
     # --- 2) Évolution par trimestre (vues par narratif) ---------------------- #
-    # quarter -> narratif -> vues
+    # quarter -> narratif -> vues (+ part institutionnelle, pour que le toggle
+    # d'exclusion global s'applique aussi aux courbes).
     quarter_map = defaultdict(lambda: defaultdict(int))
+    quarter_inst = defaultdict(lambda: defaultdict(int))
     for v in classified:
         q = quarter_of(v.get("published_at", ""))
         if not q:
             continue
         key = v["classification"]["narratif_principal"]
         quarter_map[q][key] += safe_views(v)
+        if v.get("channel_id") in INSTITUTIONAL_CHANNEL_IDS:
+            quarter_inst[q][key] += safe_views(v)
 
     # Axe temporel CONTIGU : les trimestres sans vidéo sont émis à 0, sinon le
     # graphe (axe catégoriel) rend p.ex. 2013-Q3 et 2015-Q2 adjacents.
@@ -177,6 +181,7 @@ def main():
             row = {"quarter": q}
             for key in REPORT_KEYS:
                 row[key] = quarter_map[q][key]
+                row[f"{key}_inst"] = quarter_inst[q][key]
             if q == cur_q:
                 # Trimestre en cours donc incomplet : le dashboard l'écarte de
                 # la courbe (sinon falaise artificielle en fin de série).
@@ -227,6 +232,9 @@ def main():
     aud_total = defaultdict(int)   # quarter -> vues analysées
     aud_hostile = defaultdict(int)  # quarter -> vues hostiles
     aud_videos = defaultdict(int)  # quarter -> nb de vidéos analysées
+    aud_total_inst = defaultdict(int)    # idem, part institutionnelle
+    aud_hostile_inst = defaultdict(int)
+    aud_videos_inst = defaultdict(int)
     for v in classified:
         cc = comments.get(v["video_id"])
         if not cc or cc.get("status") != "ok" or not cc.get("climat"):
@@ -234,10 +242,16 @@ def main():
         q = quarter_of(v.get("published_at", ""))
         if not q:
             continue
+        is_inst = v.get("channel_id") in INSTITUTIONAL_CHANNEL_IDS
         aud_total[q] += safe_views(v)
         aud_videos[q] += 1
+        if is_inst:
+            aud_total_inst[q] += safe_views(v)
+            aud_videos_inst[q] += 1
         if cc["climat"] in HOSTILE:
             aud_hostile[q] += safe_views(v)
+            if is_inst:
+                aud_hostile_inst[q] += safe_views(v)
 
     audience_evolution = []
     skipped_quarters = []
@@ -254,6 +268,9 @@ def main():
             "analyzed_views": tot,
             "hostile_views": aud_hostile[q],
             "hostile_pct": round(100 * aud_hostile[q] / tot, 1) if tot else 0,
+            "analyzed_videos_inst": aud_videos_inst[q],
+            "analyzed_views_inst": aud_total_inst[q],
+            "hostile_views_inst": aud_hostile_inst[q],
         })
     if skipped_quarters:
         log(f"Climat d'audience : {len(skipped_quarters)} trimestre(s) sous le seuil "

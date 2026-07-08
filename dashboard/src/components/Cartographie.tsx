@@ -20,10 +20,15 @@ import {
 
 type Metric = "views" | "videos";
 
-export default function Cartographie({ data }: { data: Aggregates }) {
+export default function Cartographie({
+  data,
+  excludeInst = false,
+}: {
+  data: Aggregates;
+  excludeInst?: boolean;
+}) {
   const [metric, setMetric] = useState<Metric>("views");
   const [excludeHS, setExcludeHS] = useState(true);
-  const [excludeInst, setExcludeInst] = useState(false);
 
   // Liste des narratifs affichés (option : exclure le hors-sujet).
   const keys = NARRATIVE_ORDER.filter((k) => !(excludeHS && k === "HORS_SUJET"));
@@ -54,7 +59,6 @@ export default function Cartographie({ data }: { data: Aggregates }) {
       metric === "views" ? b.views_pct - a.views_pct : b.videos_pct - a.videos_pct
     );
   const hasHorsSujet = (data.narratives.HORS_SUJET?.videos ?? 0) > 0;
-  const instPct = data.meta.institutional_views_pct ?? 0;
 
   const primaryKey = metric === "views" ? "views_pct" : "videos_pct";
   const secondaryKey = metric === "views" ? "videos_pct" : "views_pct";
@@ -98,18 +102,6 @@ export default function Cartographie({ data }: { data: Aggregates }) {
             />
             Exclure le « hors-sujet » ({data.narratives["HORS_SUJET"].views_pct}% des vues —
             climat utilisé comme simple accroche)
-          </label>
-        )}
-        {instPct > 0 && (
-          <label className="flex items-center gap-2 text-sm text-stone-600 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={excludeInst}
-              onChange={(e) => setExcludeInst(e.target.checked)}
-              className="rounded border-stone-300"
-            />
-            Exclure les chaînes institutionnelles / annonceurs ({instPct}% des vues —
-            Enedis, ministères, AFD… : visibilité largement issue de campagnes pub)
           </label>
         )}
       </div>

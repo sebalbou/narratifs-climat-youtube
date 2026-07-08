@@ -26,20 +26,37 @@ const PERIODS = [
 ] as const;
 type PeriodId = (typeof PERIODS)[number]["id"];
 
-export default function Evolution({ data }: { data: Aggregates }) {
+export default function Evolution({
+  data,
+  excludeInst = false,
+}: {
+  data: Aggregates;
+  excludeInst?: boolean;
+}) {
   const [normalized, setNormalized] = useState(false);
   const [period, setPeriod] = useState<PeriodId>("2019");
 
   const from = PERIODS.find((p) => p.id === period)?.from ?? "";
   // Trimestre en cours (incomplet) : écarté de la courbe, signalé en note.
   const excludedQuarter = data.evolution.find((r) => r.incomplete)?.quarter;
+  // Vues d'un narratif sur un trimestre, déduction faite de la part
+  // institutionnelle/annonceurs quand le filtre global est actif.
+  const viewsOf = (row: (typeof data.evolution)[number], k: string) =>
+    (Number(row[k]) || 0) -
+    (excludeInst ? Number(row[`${k}_inst`]) || 0 : 0);
   // Le format YYYY-Qn se compare lexicographiquement.
   const rows = data.evolution
     .filter((r) => !r.incomplete && r.quarter >= from)
-    .map((row) => ({
-      ...row,
-      __total: NARRATIVE_ORDER.reduce((s, k) => s + (Number(row[k]) || 0), 0),
-    }));
+    .map((row) => {
+      const out: Record<string, string | number | boolean | undefined> = {
+        quarter: row.quarter,
+      };
+      NARRATIVE_ORDER.forEach((k) => {
+        out[k] = viewsOf(row, k);
+      });
+      out.__total = NARRATIVE_ORDER.reduce((s, k) => s + (Number(out[k]) || 0), 0);
+      return out;
+    });
 
   return (
     <section>

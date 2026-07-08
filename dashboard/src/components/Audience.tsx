@@ -55,19 +55,45 @@ export default function Audience({
   comments,
   hasComments,
   evolution = [],
+  excludeInst = false,
 }: {
   videos: VideoRow[];
   comments: CommentsMap;
   hasComments: boolean;
   evolution?: AudienceEvolutionRow[];
+  excludeInst?: boolean;
 }) {
   const rows = useMemo(
     () =>
       videos
+        .filter((v) => !(excludeInst && v.is_institutional))
         .map((v) => ({ v, c: comments[v.video_id] }))
         .filter((r) => r.c && r.c.climat),
-    [videos, comments]
+    [videos, comments, excludeInst]
   );
+
+  // Évolution recalculée hors chaînes institutionnelles quand le filtre global
+  // est actif (les champs *_inst viennent de aggregate.py). On ré-applique le
+  // seuil d'échantillon, une soustraction pouvant vider un trimestre.
+  const evolutionRows = useMemo(() => {
+    if (!excludeInst) return evolution;
+    return evolution
+      .map((r) => {
+        const analyzed_views = r.analyzed_views - (r.analyzed_views_inst ?? 0);
+        const hostile_views = r.hostile_views - (r.hostile_views_inst ?? 0);
+        const analyzed_videos = r.analyzed_videos - (r.analyzed_videos_inst ?? 0);
+        return {
+          ...r,
+          analyzed_views,
+          hostile_views,
+          analyzed_videos,
+          hostile_pct: analyzed_views
+            ? Math.round((1000 * hostile_views) / analyzed_views) / 10
+            : 0,
+        };
+      })
+      .filter((r) => r.analyzed_videos >= 5 || r.analyzed_views >= 1_000_000);
+  }, [evolution, excludeInst]);
 
   if (!hasComments || rows.length === 0) {
     return (
@@ -145,7 +171,7 @@ export default function Audience({
       </div>
 
       {/* Évolution temporelle de la part hostile */}
-      {evolution.length > 1 && (
+      {evolutionRows.length > 1 && (
         <div className="mb-8">
           <h3 className="text-base font-semibold text-stone-900 mb-1">
             La part d'audience hostile monte-t-elle ?
@@ -159,7 +185,7 @@ export default function Audience({
           </p>
           <div className="bg-white border border-stone-200 rounded-lg p-4">
             <ResponsiveContainer width="100%" height={240}>
-              <AreaChart data={evolution} margin={{ top: 8, right: 12, bottom: 4, left: 4 }}>
+              <AreaChart data={evolutionRows} margin={{ top: 8, right: 12, bottom: 4, left: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0efed" vertical={false} />
                 <XAxis
                   dataKey="quarter"

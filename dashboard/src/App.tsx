@@ -30,7 +30,11 @@ function formatPeriod(start: string | null, end: string | null): string {
 
 export default function App() {
   const [view, setView] = useState<View>("cartographie");
+  // Filtre GLOBAL : exclut les chaînes institutionnelles/annonceurs de toutes
+  // les vues (vues largement issues de campagnes publicitaires).
+  const [excludeInst, setExcludeInst] = useState(false);
   const { meta } = aggregates;
+  const instPct = meta.institutional_views_pct ?? 0;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -60,9 +64,9 @@ export default function App() {
         </div>
       </header>
 
-      {/* Navigation */}
+      {/* Navigation + filtre global */}
       <nav className="border-b border-stone-200 bg-white sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-4 flex gap-1">
+        <div className="max-w-5xl mx-auto px-4 flex flex-wrap items-center gap-1">
           {TABS.map((tab) => (
             <button
               key={tab.id}
@@ -76,6 +80,20 @@ export default function App() {
               {tab.label}
             </button>
           ))}
+          {instPct > 0 && (
+            <label
+              className="ml-auto flex items-center gap-2 py-2 text-xs text-stone-600 cursor-pointer"
+              title={`Enedis, ministères, AFD… : visibilité largement issue de campagnes publicitaires (${instPct}% des vues). Le filtre s'applique à tous les onglets.`}
+            >
+              <input
+                type="checkbox"
+                checked={excludeInst}
+                onChange={(e) => setExcludeInst(e.target.checked)}
+                className="rounded border-stone-300"
+              />
+              Exclure chaînes institutionnelles / annonceurs ({instPct}% des vues)
+            </label>
+          )}
         </div>
       </nav>
 
@@ -85,18 +103,27 @@ export default function App() {
           <EmptyState />
         ) : (
           <>
-            {view === "cartographie" && <Cartographie data={aggregates} />}
-            {view === "evolution" && <Evolution data={aggregates} />}
+            {view === "cartographie" && (
+              <Cartographie data={aggregates} excludeInst={excludeInst} />
+            )}
+            {view === "evolution" && (
+              <Evolution data={aggregates} excludeInst={excludeInst} />
+            )}
             {view === "audience" && (
               <Audience
                 videos={videos}
                 comments={comments}
                 hasComments={hasComments}
                 evolution={aggregates.audience_evolution ?? []}
+                excludeInst={excludeInst}
               />
             )}
             {view === "explorateur" && (
-              <Explorateur videos={videos} comments={comments} />
+              <Explorateur
+                videos={videos}
+                comments={comments}
+                excludeInst={excludeInst}
+              />
             )}
           </>
         )}
