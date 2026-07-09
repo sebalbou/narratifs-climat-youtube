@@ -1,6 +1,6 @@
 # Cartographie des narratifs climat sur YouTube France
 
-**Dashboard en ligne : https://lahourba.github.io/narratifs-climat-youtube/**
+**Dashboard en ligne : https://sebalbou.github.io/narratifs-climat-youtube/**
 
 Outil qui collecte des vidéos YouTube francophones sur le climat, les classe par
 **narratif dominant** via un LLM, pondère par l'audience (vues), et restitue le
