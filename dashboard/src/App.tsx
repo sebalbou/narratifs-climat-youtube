@@ -8,19 +8,21 @@ import Cartographie from "./components/Cartographie";
 import Evolution from "./components/Evolution";
 import Explorateur from "./components/Explorateur";
 import Audience from "./components/Audience";
+import Methode from "./components/Methode";
 
 const aggregates = aggregatesData as unknown as Aggregates;
 const videos = videosData as unknown as VideoRow[];
 const comments = commentsData as unknown as CommentsMap;
 const hasComments = Object.keys(comments).length > 0;
 
-type View = "cartographie" | "evolution" | "explorateur" | "audience";
+type View = "cartographie" | "evolution" | "explorateur" | "audience" | "methode";
 
 const TABS: { id: View; label: string }[] = [
   { id: "cartographie", label: "Cartographie" },
   { id: "evolution", label: "Évolution" },
   { id: "audience", label: "Audience" },
   { id: "explorateur", label: "Explorateur" },
+  { id: "methode", label: "Méthode" },
 ];
 
 function formatPeriod(start: string | null, end: string | null): string {
@@ -52,9 +54,15 @@ export default function App() {
           </p>
           <p className="mt-2 text-xs text-stone-500 leading-relaxed max-w-3xl">
             <strong>Périmètre&nbsp;:</strong> YouTube uniquement. Corpus issu de la
-            recherche YouTube (requêtes de consensus <em>et</em> sceptiques pour
-            limiter le biais). Échantillon non exhaustif&nbsp;: il reflète ce que la
-            recherche YouTube remonte, pas l'intégralité de la plateforme.
+            recherche YouTube (requêtes de consensus <em>et</em> sceptiques) puis
+            élargi aux autres vidéos climat des chaînes trouvées. Échantillon non
+            exhaustif.{" "}
+            <button
+              onClick={() => setView("methode")}
+              className="underline underline-offset-2 text-stone-700 hover:text-stone-900"
+            >
+              Voir la méthode
+            </button>
           </p>
           <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-stone-500">
             <span>{formatInt(meta.total_videos_classified)} vidéos classées</span>
@@ -80,7 +88,7 @@ export default function App() {
               {tab.label}
             </button>
           ))}
-          {instPct > 0 && (
+          {instPct > 0 && view !== "methode" && (
             <label
               className="ml-auto flex items-center gap-2 py-2 text-xs text-stone-600 cursor-pointer"
               title={`Enedis, ministères, AFD… : visibilité largement issue de campagnes publicitaires (${instPct}% des vues). Le filtre s'applique à tous les onglets.`}
@@ -125,6 +133,7 @@ export default function App() {
                 excludeInst={excludeInst}
               />
             )}
+            {view === "methode" && <Methode data={aggregates} />}
           </>
         )}
       </main>
