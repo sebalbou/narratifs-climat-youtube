@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import aggregatesData from "./data/aggregates.json";
 import videosData from "./data/videos.json";
 import commentsData from "./data/comments.json";
@@ -30,8 +30,23 @@ function formatPeriod(start: string | null, end: string | null): string {
   return `${start.slice(0, 7)} → ${end.slice(0, 7)}`;
 }
 
+// Onglet reflété dans l'URL (#methode…) pour pouvoir partager un lien direct.
+function viewFromHash(): View {
+  const id = window.location.hash.replace("#", "");
+  return TABS.some((t) => t.id === id) ? (id as View) : "cartographie";
+}
+
 export default function App() {
-  const [view, setView] = useState<View>("cartographie");
+  const [view, setViewState] = useState<View>(viewFromHash);
+  const setView = (v: View) => {
+    setViewState(v);
+    window.history.replaceState(null, "", v === "cartographie" ? window.location.pathname : `#${v}`);
+  };
+  useEffect(() => {
+    const onHash = () => setViewState(viewFromHash());
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
   // Filtre GLOBAL : exclut les chaînes institutionnelles/annonceurs de toutes
   // les vues (vues largement issues de campagnes publicitaires).
   const [excludeInst, setExcludeInst] = useState(false);
